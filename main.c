@@ -24,8 +24,11 @@ typedef struct {
   body_segment_t *head;
 } player_t;
 
-void death(int length)
+
+void death(int length, body_segment_t *head)
 {
+  body_segment_t *tmp_ptr;
+
   clear();
   mvaddstr(0, 0, "YOU DIED");
   mvprintw(1, 0, "Score: %d", length - STARTING_SEGMENTS);
@@ -34,8 +37,14 @@ void death(int length)
   sleep(1);
   endwin();
   refresh();
-  exit(EXIT_SUCCESS);
+
+  while (head) {
+    tmp_ptr = head;
+    head = head->next;
+    free(tmp_ptr);
+  }
 }
+
 
 int main(int argc, char **argv)
 {
@@ -77,6 +86,7 @@ int main(int argc, char **argv)
   player.length = STARTING_SEGMENTS;
   player.direction = RIGHT;
   player.head = (body_segment_t *) malloc(sizeof(body_segment_t));
+
   body_ptr = player.head;
   for (i = 0; i < STARTING_SEGMENTS; i++) {
     body_ptr->x = max_x / 2 - i;
@@ -136,7 +146,10 @@ int main(int argc, char **argv)
 
     if (prev_y == 0 || prev_x == 0 ||
         prev_y == max_y - 1 || prev_x == max_x - 1) {
-      death(player.length);
+      death(player.length, player.head);
+      player.head = NULL;
+      body_ptr = NULL;
+      exit(EXIT_SUCCESS);
     }
     else if (prev_y == fruit_y && prev_x == fruit_x) {
       add_one = 1;
@@ -158,7 +171,10 @@ int main(int argc, char **argv)
       if (body_ptr != player.head &&
           body_ptr->x == player.head->x &&
           body_ptr->y == player.head->y) {
-        death(player.length);
+        death(player.length, player.head);
+        player.head = NULL;
+        body_ptr = NULL;
+        exit(EXIT_SUCCESS);
       }
 
       prev_x = next_x;
