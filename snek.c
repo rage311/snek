@@ -37,14 +37,46 @@ void death(int length, body_segment_t *head)
   sleep(1);
   endwin();
   refresh();
+  curs_set(TRUE);
 
   while (head) {
     tmp_ptr = head;
     head = head->next;
     free(tmp_ptr);
   }
+  tmp_ptr = NULL;
 }
 
+void place_fruit(int *fruit_xy, body_segment_t *head, int max_x, int max_y)
+{
+  int fruit_x,
+      fruit_y;
+
+  body_segment_t *body_ptr;
+
+  fruit_x = rand() % (max_x - 2) + 1;
+  fruit_y = rand() % (max_y - 2) + 1;
+
+  body_ptr = head;
+
+  while (body_ptr) {
+    if (fruit_x == body_ptr->x && fruit_y == body_ptr->y) {
+      fruit_x = rand() % (max_x - 2) + 1;
+      fruit_y = rand() % (max_y - 2) + 1;
+      body_ptr = head;
+    }
+    else {
+      body_ptr = body_ptr->next;
+    }
+  }
+  
+  mvaddstr(fruit_y, fruit_x, "@");
+
+  fruit_xy[0] = fruit_x;
+  fruit_xy[1] = fruit_y;
+
+  body_ptr = NULL;
+}
 
 int main(int argc, char **argv)
 {
@@ -60,8 +92,7 @@ int main(int argc, char **argv)
   int next_y;
   int prev_x;
   int prev_y;
-  int fruit_x;
-  int fruit_y;
+  int fruit_xy[2];
   int i;
 
   initscr();
@@ -104,9 +135,7 @@ int main(int argc, char **argv)
 
   body_ptr = player.head;
 
-  fruit_x = rand() % (max_x - 2) + 1;
-  fruit_y = rand() % (max_y - 2) + 1;
-  mvaddstr(fruit_y, fruit_x, "@");
+  place_fruit(fruit_xy, player.head, max_x, max_y);
 
   while(1) {
     while ((ch = getch()) != ERR) {
@@ -151,12 +180,8 @@ int main(int argc, char **argv)
       body_ptr = NULL;
       exit(EXIT_SUCCESS);
     }
-    else if (prev_y == fruit_y && prev_x == fruit_x) {
+    else if (prev_y == fruit_xy[1] && prev_x == fruit_xy[0]) {
       add_one = 1;
-      player.length += 1;
-      fruit_x = rand() % (max_x - 2) + 1;
-      fruit_y = rand() % (max_y - 2) + 1;
-      mvaddstr(fruit_y, fruit_x, "@");
     }
 
     body_ptr = player.head;
@@ -187,13 +212,17 @@ int main(int argc, char **argv)
         body_ptr->next->x = prev_x;
         body_ptr->next->y = prev_y;
         body_ptr->next->next = 0;
+
+        player.length += 1;
+        place_fruit(fruit_xy, player.head, max_x, max_y);
         add_one = 0;
       }
 
       body_ptr = body_ptr->next;
     }
 
-    if (player.head->x != prev_x || player.head->y != prev_y) {
+    if ((player.head->x != prev_x || player.head->y != prev_y) &&
+        (prev_y != fruit_xy[1] || prev_x != fruit_xy[0])) {
       mvaddstr(prev_y, prev_x, " ");
     }
 
@@ -205,9 +234,6 @@ int main(int argc, char **argv)
       usleep(100000);
     }
   }
-
-  endwin(); 
-  refresh();
 
   return 0;
 }
